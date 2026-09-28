@@ -5,75 +5,90 @@ const router = Router();
 
 router.get('/', async (_req, res) => {
   try {
-    const tenants = await prisma.tenant.findMany({
+    const properties = await prisma.property.findMany({
       include: {
-        user: true,
-        unit: true,
-        property: true,
+        buildings: true,
+        units: true,
+        tenant: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json(tenants);
+    res.json(properties);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch tenants', error: error.message });
+    res.status(500).json({
+      message: 'Failed to fetch properties',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
 router.get('/:id', async (req, res) => {
   try {
-    const tenant = await prisma.tenant.findUnique({
+    const property = await prisma.property.findUnique({
       where: { id: req.params.id },
       include: {
-        user: true,
-        unit: true,
-        property: true,
-        leases: true,
+        buildings: { include: { floors: true } },
+        units: true,
+        tenant: true,
       },
     });
 
-    if (!tenant) {
-      return res.status(404).json({ message: 'Tenant not found' });
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
     }
 
-    return res.json(tenant);
+    return res.json(property);
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to fetch tenant', error: error.message });
+    return res.status(500).json({
+      message: 'Failed to fetch property',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
 router.post('/', async (req, res) => {
   try {
-    const { fullName, email, phone, role = 'TENANT', propertyId, unitId, monthlyRent, deposit, serviceCharge } = req.body;
+    const {
+      name,
+      location,
+      description,
+      propertyType,
+      developerOwner,
+      amenities = [],
+      status = 'ACTIVE',
+    } = req.body;
 
-    if (!fullName) {
-      return res.status(400).json({ message: 'fullName is required' });
+    if (!name || !location || !description || !propertyType) {
+      return res.status(400).json({
+        message: 'Name, location, description and propertyType are required',
+      });
     }
 
-    const user = await prisma.user.create({
+    const slug = (name || 'property')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'property';
+
+    const property = await prisma.property.create({
       data: {
-        fullName,
-        email,
-        phone,
-        role,
+        name,
+        slug,
+        location,
+        description,
+        propertyType,
+        developerOwner,
+        amenities,
+        status,
       },
     });
 
-    const tenant = await prisma.tenant.create({
-      data: {
-        userId: user.id,
-        propertyId,
-        unitId,
-        monthlyRent,
-        deposit,
-        serviceCharge,
-      },
-      include: { user: true, property: true, unit: true },
-    });
-
-    return res.status(201).json(tenant);
+    return res.status(201).json(property);
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to create tenant', error: error.message });
+    return res.status(500).json({
+      message: 'Failed to create property',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 

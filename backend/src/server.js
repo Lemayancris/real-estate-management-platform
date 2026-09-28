@@ -7,6 +7,8 @@ import tenantsRouter from './routes/tenants.js';
 import billingRouter from './routes/billing.js';
 import dashboardRouter from './routes/dashboard.js';
 import paymentsRouter from './routes/payments.js';
+import maintenanceRouter from './routes/maintenance.js';
+import leadsRouter from './routes/leads.js';
 
 dotenv.config();
 
@@ -21,7 +23,11 @@ app.get('/api/health', async (_req, res) => {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: 'ok', database: 'connected' });
   } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Database connection failed', error: error.message });
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -30,6 +36,8 @@ app.use('/api/tenants', tenantsRouter);
 app.use('/api/invoices', billingRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/maintenance', maintenanceRouter);
+app.use('/api/leads', leadsRouter);
 
 app.listen(port, () => {
   console.log(`Backend running on http://localhost:${port}`);
