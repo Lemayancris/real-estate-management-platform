@@ -1,0 +1,144 @@
+export type Property = {
+  id: string;
+  name: string;
+  location: string;
+  type: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  status: 'Available' | 'Reserved' | 'Sold';
+  image: string;
+  description: string;
+  amenities: string[];
+};
+
+export const marketStats = [
+  { value: '4.2K', label: 'Property views' },
+  { value: '1.3K', label: 'Qualified leads' },
+  { value: '91%', label: 'Sales conversion' },
+];
+
+export const featuredProperties: Property[] = [
+  {
+    id: 'kilimani-heights',
+    name: 'Kilimani Heights',
+    location: 'Kilimani, Nairobi',
+    type: 'Apartment',
+    price: 8900000,
+    bedrooms: 3,
+    bathrooms: 3,
+    area: 1850,
+    status: 'Available',
+    image:
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'A contemporary apartment block with premium finishes, secure access, and a lifestyle-focused community designed for professionals and families.',
+    amenities: ['Gym', 'Swimming Pool', 'Parking', 'Concierge', 'Lounge'],
+  },
+  {
+    id: 'riverside-gardens',
+    name: 'Riverside Gardens',
+    location: 'Muthaiga, Nairobi',
+    type: 'Villa',
+    price: 14300000,
+    bedrooms: 4,
+    bathrooms: 4,
+    area: 3200,
+    status: 'Reserved',
+    image:
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'Luxury living with landscaped outdoor spaces, high-end finishes, and a calm residential setting ideal for executive families.',
+    amenities: ['Garden', 'Home Office', 'Backup Power', 'Security', 'Pool'],
+  },
+  {
+    id: 'nairobi-business-centre',
+    name: 'Nairobi Business Centre',
+    location: 'CBD, Nairobi',
+    type: 'Commercial',
+    price: 21500000,
+    bedrooms: 6,
+    bathrooms: 4,
+    area: 4600,
+    status: 'Sold',
+    image:
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'A mixed-use commercial development strategically placed near major transport routes, with strong rental yields and strong institutional appeal.',
+    amenities: ['Lift', 'Parking', 'Business Lounge', 'High Speed Internet', 'Fire Safety'],
+  },
+];
+
+export const activeLeads = [
+  {
+    title: '3-Bedroom Apartments',
+    type: 'Buyers',
+    value: '41 inquiries',
+    description: 'Demand remains strongest in Kilimani, Westlands, and Ruaka for move-in ready units with secure access.',
+  },
+  {
+    title: 'Family Villas',
+    type: 'Luxury',
+    value: '29 inquiries',
+    description: 'High-end residential buyers are prioritizing gated compounds, quality finishes, and outdoor living spaces.',
+  },
+  {
+    title: 'Commercial Suites',
+    type: 'Investors',
+    value: '17 inquiries',
+    description: 'Investors are seeking yields from mixed-use office and retail spaces in central business districts.',
+  },
+];
+
+export const adminMetrics = [
+  { label: 'Total properties', value: '248', trend: '+8.2%' },
+  { label: 'Occupied units', value: '1,482', trend: '+4.1%' },
+  { label: 'Outstanding rent', value: 'KES 4.2M', trend: '-2.3%' },
+  { label: 'Maintenance tickets', value: '17', trend: '+1.5%' },
+];
+
+export const monthlyRevenue = [
+  { month: 'Jan', value: 55 },
+  { month: 'Feb', value: 62 },
+  { month: 'Mar', value: 58 },
+  { month: 'Apr', value: 66 },
+  { month: 'May', value: 71 },
+  { month: 'Jun', value: 79 },
+  { month: 'Jul', value: 88 },
+];
+
+export const occupancyData = [
+  { label: 'Residential', value: 84 },
+  { label: 'Commercial', value: 73 },
+  { label: 'Short-term lets', value: 68 },
+  { label: 'Vacant units', value: 22 },
+];
+
+export const maintenanceTrend = [
+  { label: 'Plumbing', priority: 'High', count: 6, change: '+2 this week' },
+  { label: 'Electrical', priority: 'Medium', count: 4, change: '+1 this week' },
+  { label: 'Cleaning', priority: 'Low', count: 7, change: '-1 this week' },
+];
+
+export const topPerformance = [
+  { name: 'Miriam Wanjiku', role: 'Sales Lead', sales: 'KES 9.1M' },
+  { name: 'Daniel Mutua', role: 'Property Manager', sales: 'KES 7.8M' },
+  { name: 'Njeri Kamau', role: 'Leasing Agent', sales: 'KES 6.7M' },
+];
+
+export const propertyPortfolio = [
+  { label: 'Vacant units', value: 102 },
+  { label: 'Reserved units', value: 29 },
+  { label: 'Handed over', value: 158 },
+  { label: 'Under construction', value: 41 },
+];
+
+export const salesFunnelData = [
+  { label: 'Website visitors', value: 4200 },
+  { label: 'Inquiries', value: 980 },
+  { label: 'Leads', value: 460 },
+  { label: 'Site visits', value: 122 },
+  { label: 'Reservations', value: 54 },
+  { label: 'Sales', value: 32 },
+];
