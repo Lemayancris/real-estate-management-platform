@@ -1,0 +1,515 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  PROPERTY_MANAGER
+  LANDLORD
+  AGENT
+  TENANT
+  BUYER
+  ACCOUNTANT
+  CARETAKER
+  MAINTENANCE_TEAM
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+  INDUSTRIAL
+  PLOT
+}
+
+enum PropertyStatus {
+  DRAFT
+  ACTIVE
+  RESERVED
+  SOLD
+  UNDER_CONSTRUCTION
+  HANDOVER_PENDING
+  COMPLETED
+  ARCHIVED
+}
+
+enum UnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  OCCUPIED
+  VACANT
+  UNDER_CONSTRUCTION
+  HANDED_OVER
+}
+
+enum LeaseStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+  TERMINATED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum PaymentChannel {
+  CASH
+  BANK_TRANSFER
+  MPESA
+  CARD
+  CHEQUE
+  OTHER
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum InquiryType {
+  GENERAL
+  SALES
+  LEASING
+  SUPPORT
+  VIEWING
+  RESERVATION
+}
+
+enum LeadSource {
+  WEBSITE
+  WALK_IN
+  REFERRAL
+  AGENT
+  SOCIAL_MEDIA
+  OTHER
+}
+
+enum SalesStage {
+  WEBSITE_VISITOR
+  INQUIRY
+  LEAD
+  SITE_VISIT
+  RESERVATION
+  DEPOSIT
+  SALE
+}
+
+enum DocumentType {
+  ID
+  PASSPORT
+  LEASE_AGREEMENT
+  CONTRACT
+  INVOICE
+  RECEIPT
+  PROPERTY_PHOTO
+  FLOOR_PLAN
+  OTHER
+}
+
+model User {
+  id            String    @id @default(uuid())
+  fullName      String
+  email         String?   @unique
+  phone         String?
+  idNumber      String?
+  passwordHash  String?
+  role          UserRole  @default(TENANT)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  properties    Property[] @relation("PropertyOwner")
+  ledLeads      Lead[]     @relation("LeadAssignedAgent")
+  createdLeads  Lead[]     @relation("LeadCreatedBy")
+  createdSales  Sale[]     @relation("SaleCreatedBy")
+  tickets       MaintenanceRequest[]
+  documents     Document[]
+  auditLogs     ActivityLog[]
+  tenant        Tenant?
+  buyer         Buyer?
+  owner         Owner?
+}
+
+model Owner {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  properties  Property[]
+  createdAt   DateTime  @default(now())
+}
+
+model Buyer {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  reservations Reservation[]
+  sales       Sale[]
+}
+
+model Tenant {
+  id                   String     @id @default(uuid())
+  userId               String     @unique
+  user                 User       @relation(fields: [userId], references: [id])
+  propertyId           String?
+  property             Property?  @relation(fields: [propertyId], references: [id])
+  unitId              String?
+  unit                Unit?      @relation(fields: [unitId], references: [id])
+  emergencyContact    String?
+  leaseStartDate      DateTime?
+  leaseEndDate        DateTime?
+  monthlyRent         Decimal?   @db.Decimal(12, 2)
+  deposit             Decimal?   @db.Decimal(12, 2)
+  serviceCharge       Decimal?   @db.Decimal(12, 2)
+  waterAccount        String?
+  garbageCharges      Decimal?   @db.Decimal(12, 2)
+  outstandingBalance  Decimal?   @db.Decimal(12, 2)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  leases              Lease[]
+  invoices            Invoice[]
+  payments            Payment[]
+  serviceCharges      ServiceCharge[]
+  utilityBills        UtilityBill[]
+  maintenanceRequests MaintenanceRequest[]
+  documents           Document[]
+}
+
+model Property {
+  id                  String          @id @default(uuid())
+  name                String
+  slug                String          @unique
+  location            String
+  description         String          @db.Text
+  propertyType        PropertyType
+  status              PropertyStatus  @default(ACTIVE)
+  developerOwner      String?
+  amenities           String[]
+  photos              String[]
+  videos              String[]
+  constructionStatus  String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  ownerId            String?
+  owner              Owner?          @relation(fields: [ownerId], references: [id])
+  buildings          Building[]
+  units              Unit[]
+  tenants            Tenant[]
+  leads              Lead[]
+  inquiries          Inquiry[]
+  siteVisits         SiteVisit[]
+  reservations       Reservation[]
+  sales              Sale[]
+  documents          Document[]
+  ownerUser          User?           @relation("PropertyOwner", fields: [ownerUserId], references: [id])
+  ownerUserId        String?
+}
+
+model Building {
+  id          String    @id @default(uuid())
+  name        String
+  propertyId  String
+  property    Property  @relation(fields: [propertyId], references: [id])
+  floors      Floor[]
+  units       Unit[]
+  createdAt   DateTime  @default(now())
+}
+
+model Floor {
+  id          String    @id @default(uuid())
+  number      Int
+  buildingId  String
+  building    Building  @relation(fields: [buildingId], references: [id])
+  units       Unit[]
+  createdAt   DateTime  @default(now())
+}
+
+model Unit {
+  id                    String          @id @default(uuid())
+  unitNumber            String
+  propertyId            String
+  property              Property        @relation(fields: [propertyId], references: [id])
+  buildingId            String
+  building              Building        @relation(fields: [buildingId], references: [id])
+  floorId               String
+  floor                 Floor           @relation(fields: [floorId], references: [id])
+  unitType              String
+  bedrooms              Int
+  bathrooms             Int
+  sizeSqft              Int
+  salePrice             Decimal         @db.Decimal(12, 2)
+  rentalPrice           Decimal?        @db.Decimal(12, 2)
+  serviceCharge         Decimal?        @db.Decimal(12, 2)
+  status                UnitStatus      @default(AVAILABLE)
+  availability          String          @default("Available")
+  tenantId              String?
+  tenant                Tenant?         @relation(fields: [tenantId], references: [id])
+  ownerId               String?
+  buyerId               String?
+  constructionProgress  Int             @default(0)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  leases                Lease[]
+  invoices              Invoice[]
+  serviceCharges        ServiceCharge[]
+  utilityBills          UtilityBill[]
+  maintenanceRequests   MaintenanceRequest[]
+  reservations          Reservation[]
+  sales                 Sale[]
+  documents             Document[]
+}
+
+model Lease {
+  id            String      @id @default(uuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  unitId        String
+  unit          Unit        @relation(fields: [unitId], references: [id])
+  leaseStart    DateTime
+  leaseEnd      DateTime
+  monthlyRent   Decimal     @db.Decimal(12, 2)
+  deposit       Decimal     @db.Decimal(12, 2)
+  serviceCharge Decimal?    @db.Decimal(12, 2)
+  status        LeaseStatus @default(ACTIVE)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Invoice {
+  id                  String        @id @default(uuid())
+  invoiceNumber       String        @unique
+  tenantId            String
+  tenant              Tenant        @relation(fields: [tenantId], references: [id])
+  unitId              String
+  unit                Unit          @relation(fields: [unitId], references: [id])
+  billingPeriodStart  DateTime
+  billingPeriodEnd    DateTime
+  dueDate             DateTime
+  status              InvoiceStatus @default(SENT)
+  rent                Decimal       @db.Decimal(12, 2)
+  serviceCharge       Decimal?      @db.Decimal(12, 2)
+  water               Decimal?      @db.Decimal(12, 2)
+  garbage             Decimal?      @db.Decimal(12, 2)
+  otherCharges        Decimal?      @db.Decimal(12, 2)
+  previousBalance     Decimal?      @db.Decimal(12, 2)
+  amountPaid          Decimal       @db.Decimal(12, 2) @default(0)
+  outstandingBalance Decimal       @db.Decimal(12, 2)
+  discount            Decimal?      @db.Decimal(12, 2)
+  latePenalty         Decimal?      @db.Decimal(12, 2)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  invoiceLines        InvoiceLine[]
+  payments            Payment[]
+}
+
+model InvoiceLine {
+  id          String    @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id])
+  description String
+  quantity    Int       @default(1)
+  unitPrice   Decimal   @db.Decimal(12, 2)
+  amount      Decimal   @db.Decimal(12, 2)
+  createdAt   DateTime  @default(now())
+}
+
+model Payment {
+  id                  String        @id @default(uuid())
+  invoiceId           String
+  invoice             Invoice       @relation(fields: [invoiceId], references: [id])
+  tenantId            String
+  tenant              Tenant        @relation(fields: [tenantId], references: [id])
+  amount              Decimal       @db.Decimal(12, 2)
+  channel             PaymentChannel
+  reference           String?
+  mpesaReceiptNumber  String?
+  status              PaymentStatus @default(PENDING)
+  paidAt              DateTime?
+  createdAt           DateTime      @default(now())
+
+  receipts            Receipt[]
+}
+
+model Receipt {
+  id             String    @id @default(uuid())
+  paymentId      String
+  payment        Payment   @relation(fields: [paymentId], references: [id])
+  receiptNumber  String    @unique
+  issuedAt       DateTime  @default(now())
+  fileUrl        String?
+}
+
+model ServiceCharge {
+  id            String    @id @default(uuid())
+  unitId        String
+  unit          Unit      @relation(fields: [unitId], references: [id])
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  name          String
+  chargeType    String
+  amount        Decimal   @db.Decimal(12, 2)
+  basis         String?
+  createdAt     DateTime  @default(now())
+}
+
+model UtilityBill {
+  id             String    @id @default(uuid())
+  unitId         String
+  unit           Unit      @relation(fields: [unitId], references: [id])
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  category       String
+  amount         Decimal   @db.Decimal(12, 2)
+  billingPeriod  String
+  status         String    @default("Pending")
+  createdAt      DateTime  @default(now())
+}
+
+model MaintenanceRequest {
+  id            String             @id @default(uuid())
+  unitId        String
+  unit          Unit               @relation(fields: [unitId], references: [id])
+  tenantId      String?
+  tenant        Tenant?            @relation(fields: [tenantId], references: [id])
+  requestType   String
+  description   String             @db.Text
+  priority      String             @default("Medium")
+  status        MaintenanceStatus  @default(OPEN)
+  assignedTo    String?
+  dueDate       DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model Lead {
+  id            String      @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  propertyId    String?
+  property      Property?   @relation(fields: [propertyId], references: [id])
+  leadSource    LeadSource  @default(WEBSITE)
+  salesStage    SalesStage  @default(LEAD)
+  notes         String?     @db.Text
+  assignedToId  String?
+  assignedTo    User?       @relation("LeadAssignedAgent", fields: [assignedToId], references: [id])
+  createdById   String?
+  createdBy     User?       @relation("LeadCreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  siteVisits    SiteVisit[]
+  reservations  Reservation[]
+  sales         Sale[]
+  inquiries     Inquiry[]
+}
+
+model Inquiry {
+  id          String       @id @default(uuid())
+  propertyId  String?
+  property    Property?    @relation(fields: [propertyId], references: [id])
+  leadId     String?
+  lead       Lead?        @relation(fields: [leadId], references: [id])
+  inquiryType InquiryType  @default(GENERAL)
+  message     String?      @db.Text
+  createdAt   DateTime     @default(now())
+}
+
+model SiteVisit {
+  id          String    @id @default(uuid())
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+  leadId     String?
+  lead       Lead?     @relation(fields: [leadId], references: [id])
+  scheduledAt DateTime
+  status      String    @default("Scheduled")
+  notes       String?   @db.Text
+}
+
+model Reservation {
+  id              String    @id @default(uuid())
+  unitId          String
+  unit            Unit      @relation(fields: [unitId], references: [id])
+  propertyId      String?
+  property        Property? @relation(fields: [propertyId], references: [id])
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  buyerId         String?
+  buyer           Buyer?    @relation(fields: [buyerId], references: [id])
+  depositAmount   Decimal?  @db.Decimal(12, 2)
+  status          String    @default("Pending")
+  reservedAt      DateTime  @default(now())
+}
+
+model Sale {
+  id              String    @id @default(uuid())
+  unitId          String
+  unit            Unit      @relation(fields: [unitId], references: [id])
+  propertyId      String?
+  property        Property? @relation(fields: [propertyId], references: [id])
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  buyerId         String?
+  buyer           Buyer?    @relation(fields: [buyerId], references: [id])
+  salePrice       Decimal   @db.Decimal(12, 2)
+  depositAmount   Decimal?  @db.Decimal(12, 2)
+  status          String    @default("Completed")
+  createdById     String?
+  createdBy       User?     @relation("SaleCreatedBy", fields: [createdById], references: [id])
+  soldAt          DateTime  @default(now())
+}
+
+model Document {
+  id             String        @id @default(uuid())
+  fileName       String
+  fileUrl        String
+  type           DocumentType
+  mimeType       String?
+  ownerId        String?
+  owner          User?         @relation(fields: [ownerId], references: [id])
+  tenantId       String?
+  tenant         Tenant?       @relation(fields: [tenantId], references: [id])
+  propertyId     String?
+  property       Property?     @relation(fields: [propertyId], references: [id])
+  unitId         String?
+  unit           Unit?         @relation(fields: [unitId], references: [id])
+  createdAt      DateTime      @default(now())
+}
+
+model ActivityLog {
+  id          String    @id @default(uuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+}
