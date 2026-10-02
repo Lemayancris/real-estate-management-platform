@@ -9,13 +9,17 @@ router.get('/', async (_req, res) => {
       include: {
         buildings: true,
         units: true,
+        tenants: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
     res.json(properties);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch properties', error: error.message });
+    res.status(500).json({
+      message: 'Failed to fetch properties',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
@@ -24,8 +28,9 @@ router.get('/:id', async (req, res) => {
     const property = await prisma.property.findUnique({
       where: { id: req.params.id },
       include: {
-        buildings: true,
+        buildings: { include: { floors: true } },
         units: true,
+        tenants: true,
       },
     });
 
@@ -35,19 +40,35 @@ router.get('/:id', async (req, res) => {
 
     return res.json(property);
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to fetch property', error: error.message });
+    return res.status(500).json({
+      message: 'Failed to fetch property',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
 router.post('/', async (req, res) => {
   try {
-    const { name, location, description, propertyType, developerOwner, amenities = [], status = 'ACTIVE' } = req.body;
+    const {
+      name,
+      location,
+      description,
+      propertyType,
+      developerOwner,
+      amenities = [],
+      status = 'ACTIVE',
+    } = req.body;
 
     if (!name || !location || !description || !propertyType) {
-      return res.status(400).json({ message: 'Name, location, description and propertyType are required' });
+      return res.status(400).json({
+        message: 'Name, location, description and propertyType are required',
+      });
     }
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'property';
+    const slug = (name || 'property')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'property';
 
     const property = await prisma.property.create({
       data: {
@@ -64,7 +85,10 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json(property);
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to create property', error: error.message });
+    return res.status(500).json({
+      message: 'Failed to create property',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 

@@ -3,42 +3,52 @@ import { prisma } from '../lib/prisma.js';
 
 const router = Router();
 
-router.post('/mpesa/initiate', async (req, res) => {
+router.get('/', async (_req, res) => {
   try {
-    const { phoneNumber, amount, invoiceId, tenantId } = req.body;
+    const tickets = await prisma.maintenanceRequest.findMany({
+      include: {
+        unit: true,
+        tenant: {
+          include: { user: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    if (!phoneNumber || !amount || !invoiceId) {
+    res.json(tickets);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to fetch maintenance tickets',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const { unitId, tenantId, requestType, description, priority = 'Medium' } = req.body;
+
+    if (!unitId || !requestType || !description) {
       return res.status(400).json({
-        message: 'phoneNumber, amount and invoiceId are required',
+        message: 'unitId, requestType and description are required',
       });
     }
 
-    if (!tenantId) {
-      return res.status(400).json({ message: 'tenantId is required' });
-    }
-
-    const paymentReference = `MPESA-${Date.now()}`;
-
-    const payment = await prisma.payment.create({
+    const ticket = await prisma.maintenanceRequest.create({
       data: {
-        invoiceId,
+        unitId,
         tenantId,
-        amount: Number(amount),
-        channel: 'MPESA',
-        reference: paymentReference,
-        status: 'PENDING',
+        requestType,
+        description,
+        priority,
+        status: 'OPEN',
       },
     });
 
-    return res.status(202).json({
-      message: 'M-Pesa payment initiation accepted',
-      payment,
-      reference: paymentReference,
-      stubMode: true,
-    });
+    res.status(201).json(ticket);
   } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to initiate M-Pesa payment',
+    res.status(500).json({
+      message: 'Failed to create maintenance ticket',
       error: error instanceof Error ? error.message : String(error),
     });
   }
